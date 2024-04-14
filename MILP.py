@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.optimize as opt
-from tabulate import tabulate
-
+import pandas as pd
 
 # use this to ensure x is a col. vector
 def flatten(U, T):
@@ -11,8 +10,10 @@ def flatten(U, T):
 
 
 def main():
-    U = np.array([[3300, 4200, 4800, 5100, 9000]])  # cost of operating each aircraft in $/hr
-    T = np.array([[1, 1.3, 1.4, 1.5, 1.7, 2.1, 2.3, 3.3, 4.3, 4.9]])  # route time in hours
+    # cost of operating each aircraft in $/hr
+    U = np.array([[3300, 4200, 4800, 5100, 9000]])
+    # route time in hours
+    T = np.array([[1, 1.3, 1.4, 1.5, 1.7, 2.1, 2.3, 3.3, 4.3, 4.9]])
 
     num_aircraft_types = np.size(U)
     num_destinations = np.size(T)
@@ -52,23 +53,24 @@ def main():
     # account for operation time
     for i in range(num_aircraft_types):
         new_row = np.zeros(x_size)
-        new_row[num_destinations*i:num_destinations*i + num_destinations] = T[0, i]
+        new_row[num_destinations*i:
+                num_destinations*i+num_destinations] = T[0, i]
         A = np.vstack((A, new_row))
 
-    ub = np.concatenate((-demand, num_aircraft, -min_flights, max_flight_hours))
+    ub = np.concatenate((-demand, num_aircraft,
+                         -min_flights, max_flight_hours))
 
     constraints = opt.LinearConstraint(A, ub=ub)
 
     x_star = opt.milp(c, constraints=constraints, integrality=1).x
 
-    print(np.linalg.matrix_rank(A))
 
-    x_star = np.reshape(x_star, (num_aircraft_types, num_destinations)).transpose()
+def sensitivity_analysis(c, x_star, A, b, sensitivity=0.1):
+    sens = np.array([np.floor(x_star * (1-sensitivity)),
+                     np.ceil(x_star * (1+sensitivity))])
+    new_values = np.array([c.transpose() @ sens[0], c.transpose() @ sens[1]])
 
-    print(tabulate(x_star))
-
-    print(x_star @ capacities)
-    # pd.DataFrame(ub).to_clipboard()
+    return sens, new_values
 
 
 if __name__ == "__main__":

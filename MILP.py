@@ -11,8 +11,8 @@ def flatten(U, T):
 
 
 def main():
-    U = np.array([[1, 2, 3, 4, 5]])  # cost of operating each aircraft in $/hr
-    T = np.array([[6, 7, 8, 9, 10, 11, 12, 13, 14, 15]])  # route time in hours
+    U = np.array([[3300, 4200, 4800, 5100, 9000]])  # cost of operating each aircraft in $/hr
+    T = np.array([[1, 1.3, 1.4, 1.5, 1.7, 2.1, 2.3, 3.3, 4.3, 4.9]])  # route time in hours
 
     num_aircraft_types = np.size(U)
     num_destinations = np.size(T)
@@ -24,16 +24,17 @@ def main():
     # first 10 entries of c correspond to the first airplane type,
     # next 10 to the second airplane type, etc.
 
-    demand = np.array([700, 300, 200, 700, 100, 900, 1000, 300, 1300, 1000])
-    capacities = np.array([100, 200, 300, 400, 500])
-    num_aircraft = np.array([1000, 1000, 1000, 1000, 1000])
+    demand = np.array([2000, 1300, 500, 1300, 800, 300, 1700, 400, 1700, 900])
+    min_flights = np.array([1, 2, 3, 4, 5, 5, 5, 5, 5, 5])
+    capacities = np.array([180, 230, 250, 330, 470])
+    num_aircraft = np.array([15, 5, 7, 90, 30])
+    max_flight_hours = 20*num_aircraft
 
     A = np.zeros([num_destinations, x_size])
     # ensure that flights going to each airport meet passenger demands
-
     for i in range(num_destinations):
         for j in range(num_aircraft_types):
-            A[i, j * num_destinations + i] = capacities[j]
+            A[i, j * num_destinations + i] = -capacities[j]
 
     # ensure that we aren't exceeding the number of aircraft in the fleet
     for i in range(num_aircraft_types):
@@ -41,22 +42,33 @@ def main():
         new_row[num_destinations*i:num_destinations*i + num_destinations] = 1
         A = np.vstack((A, new_row))
 
-    lb = np.pad(demand, (0, np.shape(A)[0] - np.size(demand)))
-    ub = np.pad(num_aircraft,
-                (np.shape(A)[0] - np.size(num_aircraft), 0),
-                'constant', constant_values=1000000)
+    # ensure min flight requirements
+    for i in range(num_destinations):
+        new_row = np.zeros(x_size)
+        for j in range(num_aircraft_types):
+            new_row[i + j * 10] = -1
+        A = np.vstack((A, new_row))
 
-    # some airports have restrictions on the larger aircraft
     # account for operation time
+    for i in range(num_aircraft_types):
+        new_row = np.zeros(x_size)
+        new_row[num_destinations*i:num_destinations*i + num_destinations] = T[0, i]
+        A = np.vstack((A, new_row))
 
-    # ensure that constraint vectors are correct dimension
-    constraints = opt.LinearConstraint(A, lb=lb, ub=ub)
+    ub = np.concatenate((-demand, num_aircraft, -min_flights, max_flight_hours))
+
+    constraints = opt.LinearConstraint(A, ub=ub)
 
     x_star = opt.milp(c, constraints=constraints, integrality=1).x
 
-    x_star = np.reshape(x_star, (num_aircraft_types, num_destinations))
+    print(np.linalg.matrix_rank(A))
+
+    x_star = np.reshape(x_star, (num_aircraft_types, num_destinations)).transpose()
 
     print(tabulate(x_star))
+
+    print(x_star @ capacities)
+    # pd.DataFrame(ub).to_clipboard()
 
 
 if __name__ == "__main__":

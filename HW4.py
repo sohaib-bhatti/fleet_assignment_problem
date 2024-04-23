@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.optimize as opt
-from tabulate import tabulate
 
 
 def main():
@@ -19,13 +18,9 @@ def main():
 
     x_star = opt.linprog(c, A_ub=-A, b_ub=-b)
 
-    print(x_star)
-
-    print(A@(x_star.x).T)
-
     # standard form
 
-    A_tilde = np.hstack((A, np.identity(5)))
+    A_tilde = np.c_[A, -np.identity(5)]
 
     b = np.array([[400000, 600000, 500000, 1000000, 300000]])
 
@@ -33,13 +28,10 @@ def main():
 
     x_star_standard = opt.linprog(c_tilde, A_eq=A_tilde, b_eq=b)
 
-    print(x_star_standard)
+    # dual problem
 
-    # the dual
-
-    print(np.shape(b), np.shape(A_tilde.T), np.shape(c))
-
-    lambda_star = opt.linprog(-b, A_ub=A.T, b_ub=c, bounds=(None, 0))
+    lambda_star = opt.linprog(-b, A_ub=A_tilde.T,
+                              b_ub=c_tilde, bounds=(0, None))
 
     print(lambda_star)
 

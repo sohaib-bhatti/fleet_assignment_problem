@@ -2,33 +2,57 @@ import numpy as np
 import scipy.optimize as opt
 import pandas as pd
 
+
 # use this to ensure x is a col. vector
-def flatten(U, T):
-    E = U.transpose() @ T
+def flatten(U, H, C):
+    E = U.transpose() @ H
     # print("the big ol matrix is of shape", np.shape(E))
-    return np.ndarray.flatten(E)
+    return np.ndarray.flatten(E) + C.transpose()
 
 
 def main():
+    # number of days we're planning for
+    timeline = 10 * 365
+
     # cost of operating each aircraft in $/hr
-    U = np.array([[3300, 4200, 4800, 5100, 9000]])
+    U = np.array([[15000, 15500]])
+
+    # cost of purchasing an aircraft
+    P = np.array([[200000000, 350000000]])
+
+    # cost of maintenance
+    M = np.array([[500, 1000]]) * timeline
+
+    # cost of take-off
+    T = np.array([[5000, 8000]])
+
     # route time in hours
-    T = np.array([[1, 1.3, 1.4, 1.5, 1.7, 2.1, 2.3, 3.3, 4.3, 4.9]])
+    H = np.array([[1, 1.3, 3]])
 
     num_aircraft_types = np.size(U)
-    num_destinations = np.size(T)
-
+    num_destinations = np.size(H)
     x_size = num_aircraft_types * num_destinations
 
-    c = flatten(U, T)
+    C = np.transpose(P + M + T)
+
+    print(C)
+
+    C = np.repeat(C, repeats=num_destinations, axis=0)
+
+    print(C)
+
+    c = flatten(U, H, C)
+
+    print(c)
+
     # print("c is of shape", np.shape(c))
     # first 10 entries of c correspond to the first airplane type,
     # next 10 to the second airplane type, etc.
 
-    demand = np.array([2000, 1300, 500, 1300, 800, 300, 1700, 400, 1700, 900])
-    min_flights = np.array([1, 2, 3, 4, 5, 5, 5, 5, 5, 5])
-    capacities = np.array([180, 230, 250, 330, 470])
-    num_aircraft = np.array([15, 5, 7, 90, 30])
+    demand = np.array([2000, 1300, 1500])
+    min_flights = np.array([1, 2, 5])
+    capacities = np.array([180, 230])
+    num_aircraft = np.array([100, 100])
     max_flight_hours = 20*num_aircraft
 
     A = np.zeros([num_destinations, x_size])
@@ -47,7 +71,7 @@ def main():
     for i in range(num_destinations):
         new_row = np.zeros(x_size)
         for j in range(num_aircraft_types):
-            new_row[i + j * 10] = -1
+            new_row[i + j * num_aircraft_types] = -1
         A = np.vstack((A, new_row))
 
     # account for operation time
@@ -63,6 +87,8 @@ def main():
     constraints = opt.LinearConstraint(A, ub=ub)
 
     x_star = opt.milp(c, constraints=constraints, integrality=1).x
+
+    print(x_star)
 
 
 def sensitivity_analysis(c, x_star, A, b, sensitivity=0.1):

@@ -11,19 +11,23 @@ def flatten(U, H, C):
 
 
 def main():
-    timeline = 10 * 365  # number of days we're planning for
+    years = 10
+    timeline = years * 365  # number of days we're planning for
 
-    """U = np.array([[15000, 15500]]) * timeline  # cost of operating each aircraft in $/hr
-    P = np.array([[200000000, 350000000]])  # cost of purchasing an aircraft
-    M = np.array([[500, 1000]]) * timeline  # cost of maintenance
-    T = np.array([[5000, 8000]]) * timeline  # cost of take-off
-    H = np.array([[1, 1.3, 3]])  # route time in hours"""
+    # Airplane Models:
+    # Airbus A319-100
+    # Airbus A320-200
+    # Airbus A321-200
+    # Boeing 737-800
+    # Boeing 747
 
-    U = np.array([[15000]]) * timeline  # cost of operating each aircraft in $/hr
-    P = np.array([[200000000]])  # cost of purchasing an aircraft
-    M = np.array([[500]]) * timeline  # cost of maintenance
-    T = np.array([[5000]]) * timeline  # cost of take-off
-    H = np.array([[1]])  # route time in hours
+    total_operating_cost = np.array([[7244, 9600, 9777, 5757, 25000]])  # /hr
+
+    U = total_operating_cost * 0.8 * timeline  # cost of operating each aircraft /hr
+    P = np.array([[89000000, 101000000, 114000000, 106100000, 120000000]])  # cost of purchasing an aircraft
+    M = np.array([[20000, 20000, 20000, 20000, 20000]]) * timeline  # cost of maintenance /yr
+    T = total_operating_cost * 0.2 * timeline  # cost of take-off
+    H = np.array([[2, 1.75, 2.25, 2.5, 2.7, 3.3, 1.25, 1.5, 2.75, 2]])  # route time in hours
 
     num_aircraft_types = np.size(U)
     num_destinations = np.size(H)
@@ -40,10 +44,11 @@ def main():
     num_aircraft = np.array([100, 100])
     max_flight_hours = 20*num_aircraft"""
 
-    demand = np.array([2000])
-    min_flights = np.array([1])
-    capacities = np.array([180])
-    num_aircraft = np.array([100])
+    demand = np.array([220640, 221480, 193760, 158200, 137480, 124040,
+                       103320, 96600, 86240, 75600])
+    min_flights = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    capacities = np.array([128, 150, 190, 172, 660])
+    num_aircraft = np.array([1000, 1000, 1000, 1000, 1000])
     max_flight_hours = 20*num_aircraft
 
     A = np.zeros([num_destinations, x_size])

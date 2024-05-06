@@ -11,48 +11,39 @@ def flatten(U, H, C):
 
 
 def main():
-    # number of days we're planning for
-    timeline = 10 * 365
+    timeline = 10 * 365  # number of days we're planning for
 
-    # cost of operating each aircraft in $/hr
-    U = np.array([[15000, 15500]])
+    """U = np.array([[15000, 15500]]) * timeline  # cost of operating each aircraft in $/hr
+    P = np.array([[200000000, 350000000]])  # cost of purchasing an aircraft
+    M = np.array([[500, 1000]]) * timeline  # cost of maintenance
+    T = np.array([[5000, 8000]]) * timeline  # cost of take-off
+    H = np.array([[1, 1.3, 3]])  # route time in hours"""
 
-    # cost of purchasing an aircraft
-    P = np.array([[200000000, 350000000]])
-
-    # cost of maintenance
-    M = np.array([[500, 1000]]) * timeline
-
-    # cost of take-off
-    T = np.array([[5000, 8000]])
-
-    # route time in hours
-    H = np.array([[1, 1.3, 3]])
+    U = np.array([[15000]]) * timeline  # cost of operating each aircraft in $/hr
+    P = np.array([[200000000]])  # cost of purchasing an aircraft
+    M = np.array([[500]]) * timeline  # cost of maintenance
+    T = np.array([[5000]]) * timeline  # cost of take-off
+    H = np.array([[1]])  # route time in hours
 
     num_aircraft_types = np.size(U)
     num_destinations = np.size(H)
     x_size = num_aircraft_types * num_destinations
 
     C = np.transpose(P + M + T)
-
-    print(C)
-
     C = np.repeat(C, repeats=num_destinations, axis=0)
 
-    print(C)
+    c = np.squeeze(flatten(U, H, C))
 
-    c = flatten(U, H, C)
-
-    print(c)
-
-    # print("c is of shape", np.shape(c))
-    # first 10 entries of c correspond to the first airplane type,
-    # next 10 to the second airplane type, etc.
-
-    demand = np.array([2000, 1300, 1500])
+    """demand = np.array([2000, 1300, 1500])
     min_flights = np.array([1, 2, 5])
     capacities = np.array([180, 230])
     num_aircraft = np.array([100, 100])
+    max_flight_hours = 20*num_aircraft"""
+
+    demand = np.array([2000])
+    min_flights = np.array([1])
+    capacities = np.array([180])
+    num_aircraft = np.array([100])
     max_flight_hours = 20*num_aircraft
 
     A = np.zeros([num_destinations, x_size])
@@ -64,7 +55,7 @@ def main():
     # ensure that we aren't exceeding the number of aircraft in the fleet
     for i in range(num_aircraft_types):
         new_row = np.zeros(x_size)
-        new_row[num_destinations*i:num_destinations*i + num_destinations] = 1
+        new_row[num_destinations*i:num_destinations*i + num_destinations] = -1
         A = np.vstack((A, new_row))
 
     # ensure min flight requirements
@@ -78,15 +69,19 @@ def main():
     for i in range(num_aircraft_types):
         new_row = np.zeros(x_size)
         new_row[num_destinations*i:
-                num_destinations*i+num_destinations] = T[0, i]
+                num_destinations*i+num_destinations] = -T[0, i]
         A = np.vstack((A, new_row))
 
-    ub = np.concatenate((-demand, num_aircraft,
-                         -min_flights, max_flight_hours))
+    ub = np.concatenate((-demand, -min_flights,
+                         max_flight_hours, num_aircraft))
+
+    print("c", c)
+    print("A:", A)
+    print("ub: ", ub)
 
     constraints = opt.LinearConstraint(A, ub=ub)
 
-    x_star = opt.milp(c, constraints=constraints, integrality=1).x
+    x_star = opt.milp(c, constraints=constraints, integrality=1)
 
     print(x_star)
 
